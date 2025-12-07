@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cambridge Diffusion Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Lato', sans-serif;
+            overflow-x: hidden;
+        }
+        .book-font {
+            font-family: 'Crimson Text', serif;
+        }
+        .book-texture {
+            background-color: #fdfbf7;
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23d4c5b0' fill-opacity='0.2' fill-rule='evenodd'%3E%3Cpath d='M0 38.59l2.83-2.83 1.41 1.41L1.41 40H0v-1.41zM0 1.4l2.83 2.83 1.41-1.41L1.41 0H0v1.41zM38.59 40l-2.83-2.83 1.41-1.41L40 38.59V40h-1.41zM40 1.41l-2.83 2.83-1.41-1.41L38.59 0H40v1.41zM20 18.6l2.83-2.83 1.41 1.41L21.41 20l2.83 2.83-1.41 1.41L20 21.41l-2.83 2.83-1.41-1.41L18.59 20l-2.83-2.83 1.41-1.41L20 18.59z'/%3E%3C/g%3E%3C/svg%3E");
+        }
+        canvas {
+            touch-action: none;
+        }
+        .book-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .book-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 4px;
+        }
+        .book-scroll::-webkit-scrollbar-thumb {
+            background: #888; 
+            border-radius: 4px;
+        }
+        .book-scroll::-webkit-scrollbar-thumb:hover {
+            background: #555; 
+        }
+        .smooth-scroll {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 h-screen flex flex-col items-center justify-center relative">
+
+    <!-- Header -->
+    <header class="absolute top-0 w-full bg-blue-900 text-white p-4 shadow-md z-10">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 id="header-title" class="text-xl md:text-2xl font-bold"><i class="fas fa-atom mr-2"></i>Diffusion Simulation</h1>
+                <p id="header-subtitle" class="text-xs md:text-sm text-blue-200">Cambridge IGCSE Combined & Co-ordinated Science</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <!-- Language Toggle -->
+                <button id="langToggle" class="bg-blue-800 hover:bg-blue-700 text-white border border-blue-400 px-3 py-1 rounded text-sm font-bold transition">
+                    EN | ID
+                </button>
+                <button id="openBookBtn" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg shadow transition transform hover:scale-105 flex items-center gap-2">
+                    <i class="fas fa-book-open"></i>
+                    <span id="btn-open-book-text" class="hidden md:inline">Open Learning Book</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="w-full max-w-4xl p-4 mt-16 flex flex-col md:flex-row gap-6 h-[80vh]">
+        
+        <!-- Canvas Container -->
+        <div class="flex-1 bg-white rounded-xl shadow-xl overflow-hidden relative border border-gray-200 flex flex-col">
+            <div id="visualizer-badge" class="absolute top-4 left-4 bg-white/80 backdrop-blur px-3 py-1 rounded-md text-sm font-semibold text-gray-700 z-10 shadow-sm border border-gray-200">
+                Visualizer
+            </div>
+            <canvas id="simCanvas" class="w-full h-full bg-gray-50"></canvas>
+            
+            <!-- Legend -->
+            <div class="absolute bottom-4 right-4 flex gap-4 text-xs font-bold bg-white/90 p-2 rounded shadow border">
+                <div class="flex items-center gap-1"><div class="w-3 h-3 rounded-full bg-blue-500"></div> Solute A</div>
+                <div class="flex items-center gap-1"><div class="w-3 h-3 rounded-full bg-red-500"></div> Solute B</div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="w-full md:w-80 bg-white p-6 rounded-xl shadow-xl border border-gray-200 flex flex-col gap-5 overflow-y-auto">
+            <h2 id="controls-title" class="text-lg font-bold text-gray-800 border-b pb-2">Simulation Controls</h2>
+
+            <!-- Variable: Temperature -->
+            <div class="space-y-2">
+                <label class="flex justify-between text-sm font-semibold text-gray-700">
+                    <span id="label-temp">Temperature</span>
+                    <span id="tempVal" class="text-blue-600">25°C</span>
+                </label>
+                <input type="range" id="tempSlider" min="0" max="100" value="25" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+            </div>
+
+            <!-- Variable: Concentration -->
+            <div class="space-y-2">
+                <label class="flex justify-between text-sm font-semibold text-gray-700">
+                    <span id="label-conc">Concentration</span>
+                    <span id="concVal" class="text-blue-600">Medium</span>
+                </label>
+                <input type="range" id="concSlider" min="10" max="100" value="50" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+            </div>
+
+            <!-- Quick Example Buttons -->
+            <div class="bg-amber-50 p-3 rounded-lg border border-amber-100">
+                <p id="label-examples" class="text-xs font-bold text-amber-800 mb-2 uppercase tracking-wide">View Real-life Examples:</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="openBookAt('section-temp')" class="flex items-center justify-center gap-1 px-2 py-2 bg-white border border-amber-200 hover:bg-amber-100 text-amber-900 text-xs font-semibold rounded shadow-sm transition">
+                        <i class="fas fa-thermometer-half"></i> <span id="btn-quick-temp">Temp.</span>
+                    </button>
+                    <button onclick="openBookAt('section-grad')" class="flex items-center justify-center gap-1 px-2 py-2 bg-white border border-amber-200 hover:bg-amber-100 text-amber-900 text-xs font-semibold rounded shadow-sm transition">
+                        <i class="fas fa-chart-area"></i> <span id="btn-quick-grad">Gradient</span>
+                    </button>
+                    <button onclick="openBookAt('section-area')" class="flex items-center justify-center gap-1 px-2 py-2 bg-white border border-amber-200 hover:bg-amber-100 text-amber-900 text-xs font-semibold rounded shadow-sm transition">
+                        <i class="fas fa-vector-square"></i> <span id="btn-quick-area">Area</span>
+                    </button>
+                    <button onclick="openBookAt('section-dist')" class="flex items-center justify-center gap-1 px-2 py-2 bg-white border border-amber-200 hover:bg-amber-100 text-amber-900 text-xs font-semibold rounded shadow-sm transition">
+                        <i class="fas fa-ruler-horizontal"></i> <span id="btn-quick-dist">Distance</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="mt-auto space-y-3">
+                <button id="startBtn" class="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow transition flex justify-center items-center gap-2">
+                    <i class="fas fa-play"></i> <span id="btn-start-text">Remove Barrier</span>
+                </button>
+                <button id="resetBtn" class="w-full py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg shadow transition flex justify-center items-center gap-2">
+                    <i class="fas fa-undo"></i> <span id="btn-reset-text">Reset</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- THE BOOK (Modal) -->
+    <div id="bookModal" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <!-- Book Cover/Inside -->
+        <div class="bg-[#fcf5e5] w-full max-w-3xl h-[85vh] rounded-r-2xl rounded-l-md shadow-2xl relative flex flex-col md:flex-row overflow-hidden border-l-8 border-[#5d4037]">
+            
+            <!-- Bookmark/Ribbon -->
+            <div class="absolute top-0 right-8 w-6 h-24 bg-red-700 shadow-md z-20 flex justify-center items-end pb-2 rounded-b-md">
+                <i class="fas fa-star text-yellow-400 text-xs"></i>
+            </div>
+
+            <!-- Close Button -->
+            <button id="closeBookBtn" class="absolute top-4 right-16 z-30 text-gray-600 hover:text-red-600 text-2xl transition">
+                <i class="fas fa-times-circle"></i>
+            </button>
+
+            <!-- Left Page (Table of Contents & Intro) -->
+            <div class="w-full md:w-1/2 p-8 md:border-r border-gray-300 book-texture flex flex-col overflow-y-auto book-scroll">
+                <h2 id="book-title" class="text-3xl font-bold text-[#3e2723] book-font text-center mb-2">The Principles of Diffusion</h2>
+                <div class="w-16 h-1 bg-[#3e2723] mx-auto mb-6"></div>
+                
+                <div class="prose prose-sm prose-stone">
+                    <h3 id="book-def-title" class="text-xl font-bold text-[#5d4037] book-font">Definition</h3>
+                    <p id="book-def-text" class="italic text-lg text-gray-700 border-l-4 border-amber-400 pl-4 py-2 bg-amber-50">
+                        "The net movement of particles from a region of their <strong>higher concentration</strong> to a region of their <strong>lower concentration</strong> down a concentration gradient, as a result of their random movement."
+                    </p>
+
+                    <h3 id="book-syll-title" class="text-xl font-bold text-[#5d4037] book-font mt-6">Syllabus Context</h3>
+                    <p id="book-syll-intro" class="text-xs text-gray-600 mb-2">This concept is key for both:</p>
+                    <ul class="list-none text-sm space-y-2 text-gray-700 border border-[#d7ccc8] p-3 rounded bg-[#efebe9]">
+                        <li id="book-bio-ctx"><strong class="text-[#2e7d32]">Biology (B2.1):</strong> Movement in and out of cells.</li>
+                        <li id="book-chem-ctx"><strong class="text-[#1565c0]">Chemistry (C2.1):</strong> The particulate nature of matter.</li>
+                    </ul>
+
+                    <h3 id="book-factors-title" class="text-xl font-bold text-[#5d4037] book-font mt-6">Key Factors</h3>
+                    <ul id="book-factors-list" class="list-disc pl-5 space-y-1 text-gray-700">
+                        <li>Temperature (Kinetic Energy)</li>
+                        <li>Concentration Gradient</li>
+                        <li>Surface Area</li>
+                        <li>Diffusion Distance</li>
+                    </ul>
+                </div>
+                
+                <div id="book-syll-ref" class="mt-auto pt-6 text-center text-gray-400 text-xs">
+                    <i class="fas fa-book mr-1"></i> Syllabus Reference: 0653 & 0654
+                </div>
+            </div>
+
+            <!-- Right Page (Detailed Examples) -->
+            <div id="bookRightPage" class="w-full md:w-1/2 p-8 bg-white book-texture overflow-y-auto book-scroll smooth-scroll">
+                
+                <!-- 1. Temperature -->
+                <div id="section-temp" class="mb-8 pt-2">
+                    <h3 id="sec1-title" class="text-xl font-bold text-[#d84315] book-font border-b border-[#d84315] mb-3 flex items-center gap-2">
+                        <i class="fas fa-thermometer-half"></i> 1. Temperature
+                    </h3>
+                    <p id="sec1-desc" class="text-sm mb-2 text-gray-600">Higher temperature increases kinetic energy, causing particles to move faster (Chemistry C2.1).</p>
+                    <ul id="sec1-list" class="space-y-2 text-sm text-gray-800">
+                        <li class="flex gap-2"><span class="font-bold text-[#d84315]">A.</span> Sugar dissolving faster in hot tea than cold water.</li>
+                        <li class="flex gap-2"><span class="font-bold text-[#d84315]">B.</span> The smell of cooking food spreading quickly through a house.</li>
+                        <li class="flex gap-2"><span class="font-bold text-[#d84315]">C.</span> Food coloring spreading rapidly in hot water beakers.</li>
+                        <li class="flex gap-2"><span class="font-bold text-[#d84315]">D.</span> Gas diffusion rates (like perfume) being higher in summer than winter.</li>
+                    </ul>
+                </div>
+
+                <!-- 2. Concentration Gradient -->
+                <div id="section-grad" class="mb-8 pt-2">
+                    <h3 id="sec2-title" class="text-xl font-bold text-[#1565c0] book-font border-b border-[#1565c0] mb-3 flex items-center gap-2">
+                        <i class="fas fa-chart-area"></i> 2. Concentration Gradient
+                    </h3>
+                    <p id="sec2-desc" class="text-sm mb-2 text-gray-600">The steeper the gradient (difference), the faster the rate of diffusion (Biology B2.1).</p>
+                    <ul id="sec2-list" class="space-y-2 text-sm text-gray-800">
+                        <li class="flex gap-2"><span class="font-bold text-[#1565c0]">A.</span> Oxygen moving from alveoli (high) to blood capillaries (low).</li>
+                        <li class="flex gap-2"><span class="font-bold text-[#1565c0]">B.</span> CO₂ diffusing out of a leaf stoma into the atmosphere.</li>
+                        <li class="flex gap-2"><span class="font-bold text-[#1565c0]">C.</span> Neurotransmitters diffusing across a synapse gap.</li>
+                        <li class="flex gap-2"><span class="font-bold text-[#1565c0]">D.</span> Absorption of glucose in the small intestine after a meal.</li>
+                    </ul>
+                </div>
+
+                <!-- 3. Surface Area -->
+                <div id="section-area" class="mb-8 pt-2">
+                    <h3 id="sec3-title" class="text-xl font-bold text-[#2e7d32] book-font border-b border-[#2e7d32] mb-3 flex items-center gap-2">
+                        <i class="fas fa-vector-square"></i> 3. Surface Area
+                    </h3>
+                    <p id="sec3-desc" class="text-sm mb-2 text-gray-600">Larger surface area provides more space for particles to cross. Vital for adaptations.</p>
+                    <ul id="sec3-list" class="space-y-2 text-sm text-gray-800">
+                        <li class="flex gap-2"><span class="font-bold text-[#2e7d32]">A.</span> Microvilli in the small intestine increasing absorption area.</li>
+                        <li class="flex gap-2"><span class="font-bold text-[#2e7d32]">B.</span> Root hair cells in plants maximizing water/mineral uptake.</li>
+                        <li class="flex gap-2"><span class="font-bold text-[#2e7d32]">C.</span> Millions of alveoli in lungs creating a massive gas exchange surface.</li>
+                        <li class="flex gap-2"><span class="font-bold text-[#2e7d32]">D.</span> Lamellae in fish gills providing high surface area for oxygen extraction.</li>
+                    </ul>
+                </div>
+
+                <!-- 4. Distance -->
+                <div id="section-dist" class="mb-8 pt-2">
+                    <h3 id="sec4-title" class="text-xl font-bold text-[#6a1b9a] book-font border-b border-[#6a1b9a] mb-3 flex items-center gap-2">
+                        <i class="fas fa-ruler-horizontal"></i> 4. Diffusion Distance
+                    </h3>
+                    <p id="sec4-desc" class="text-sm mb-2 text-gray-600">Shorter distance allows faster diffusion. Important for efficient exchange.</p>
+                    <ul id="sec4-list" class="space-y-2 text-sm text-gray-800">
+                        <li class="flex gap-2"><span class="font-bold text-[#6a1b9a]">A.</span> Capillary walls being only one cell thick.</li>
+                        <li class="flex gap-2"><span class="font-bold text-[#6a1b9a]">B.</span> Alveolar walls in lungs being extremely thin.</li>
+                        <li class="flex gap-2"><span class="font-bold text-[#6a1b9a]">C.</span> Flat shape of leaves reducing distance for CO₂ to reach mesophyll.</li>
+                        <li class="flex gap-2"><span class="font-bold text-[#6a1b9a]">D.</span> Fungal hyphae being thin threads to absorb nutrients quickly.</li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- TRANSLATION LOGIC ---
+        const translations = {
+            en: {
+                "header-title": `<i class="fas fa-atom mr-2"></i>Diffusion Simulation`,
+                "header-subtitle": "Cambridge IGCSE Combined & Co-ordinated Science",
+                "btn-open-book-text": "Open Learning Book",
+                "visualizer-badge": "Visualizer",
+                "controls-title": "Simulation Controls",
+                "label-temp": "Temperature",
+                "label-conc": "Concentration",
+                "label-examples": "View Real-life Examples:",
+                "btn-quick-temp": "Temp.",
+                "btn-quick-grad": "Gradient",
+                "btn-quick-area": "Area",
+                "btn-quick-dist": "Distance",
+                "btn-start-text": "Remove Barrier",
+                "btn-reset-text": "Reset",
+                "book-title": "The Principles of Diffusion",
+                "book-def-title": "Definition",
+                "book-def-text": `"The net movement of particles from a region of their <strong>higher concentration</strong> to a region of their <strong>lower concentration</strong> down a concentration gradient, as a result of their random movement."`,
+                "book-syll-title": "Syllabus Context",
+                "book-syll-intro": "This concept is key for both:",
+                "book-bio-ctx": `<strong class="text-[#2e7d32]">Biology (B2.1):</strong> Movement in and out of cells.`,
+                "book-chem-ctx": `<strong class="text-[#1565c0]">Chemistry (C2.1):</strong> The particulate nature of matter.`,
+                "book-factors-title": "Key Factors",
+                "book-factors-list": `<li>Temperature (Kinetic Energy)</li><li>Concentration Gradient</li><li>Surface Area</li><li>Diffusion Distance</li>`,
+                "book-syll-ref": `<i class="fas fa-book mr-1"></i> Syllabus Reference: 0653 & 0654`,
+                
+                "sec1-title": `<i class="fas fa-thermometer-half"></i> 1. Temperature`,
+                "sec1-desc": "Higher temperature increases kinetic energy, causing particles to move faster (Chemistry C2.1).",
+                "sec1-list": `<li class="flex gap-2"><span class="font-bold text-[#d84315]">A.</span> Sugar dissolving faster in hot tea than cold water.</li><li class="flex gap-2"><span class="font-bold text-[#d84315]">B.</span> The smell of cooking food spreading quickly through a house.</li><li class="flex gap-2"><span class="font-bold text-[#d84315]">C.</span> Food coloring spreading rapidly in hot water beakers.</li><li class="flex gap-2"><span class="font-bold text-[#d84315]">D.</span> Gas diffusion rates (like perfume) being higher in summer than winter.</li>`,
+                
+                "sec2-title": `<i class="fas fa-chart-area"></i> 2. Concentration Gradient`,
+                "sec2-desc": "The steeper the gradient (difference), the faster the rate of diffusion (Biology B2.1).",
+                "sec2-list": `<li class="flex gap-2"><span class="font-bold text-[#1565c0]">A.</span> Oxygen moving from alveoli (high) to blood capillaries (low).</li><li class="flex gap-2"><span class="font-bold text-[#1565c0]">B.</span> CO₂ diffusing out of a leaf stoma into the atmosphere.</li><li class="flex gap-2"><span class="font-bold text-[#1565c0]">C.</span> Neurotransmitters diffusing across a synapse gap.</li><li class="flex gap-2"><span class="font-bold text-[#1565c0]">D.</span> Absorption of glucose in the small intestine after a meal.</li>`,
+
+                "sec3-title": `<i class="fas fa-vector-square"></i> 3. Surface Area`,
+                "sec3-desc": "Larger surface area provides more space for particles to cross. Vital for adaptations.",
+                "sec3-list": `<li class="flex gap-2"><span class="font-bold text-[#2e7d32]">A.</span> Microvilli in the small intestine increasing absorption area.</li><li class="flex gap-2"><span class="font-bold text-[#2e7d32]">B.</span> Root hair cells in plants maximizing water/mineral uptake.</li><li class="flex gap-2"><span class="font-bold text-[#2e7d32]">C.</span> Millions of alveoli in lungs creating a massive gas exchange surface.</li><li class="flex gap-2"><span class="font-bold text-[#2e7d32]">D.</span> Lamellae in fish gills providing high surface area for oxygen extraction.</li>`,
+
+                "sec4-title": `<i class="fas fa-ruler-horizontal"></i> 4. Diffusion Distance`,
+                "sec4-desc": "Shorter distance allows faster diffusion. Important for efficient exchange.",
+                "sec4-list": `<li class="flex gap-2"><span class="font-bold text-[#6a1b9a]">A.</span> Capillary walls being only one cell thick.</li><li class="flex gap-2"><span class="font-bold text-[#6a1b9a]">B.</span> Alveolar walls in lungs being extremely thin.</li><li class="flex gap-2"><span class="font-bold text-[#6a1b9a]">C.</span> Flat shape of leaves reducing distance for CO₂ to reach mesophyll.</li><li class="flex gap-2"><span class="font-bold text-[#6a1b9a]">D.</span> Fungal hyphae being thin threads to absorb nutrients quickly.</li>`
+            },
+            id: {
+                "header-title": `<i class="fas fa-atom mr-2"></i>Simulasi Difusi`,
+                "header-subtitle": "Sains Gabungan & Terkoordinasi Cambridge IGCSE",
+                "btn-open-book-text": "Buka Buku Belajar",
+                "visualizer-badge": "Visualiser",
+                "controls-title": "Kontrol Simulasi",
+                "label-temp": "Suhu",
+                "label-conc": "Konsentrasi",
+                "label-examples": "Lihat Contoh Nyata:",
+                "btn-quick-temp": "Suhu",
+                "btn-quick-grad": "Gradien",
+                "btn-quick-area": "Luas",
+                "btn-quick-dist": "Jarak",
+                "btn-start-text": "Buka Penghalang",
+                "btn-reset-text": "Reset",
+                "book-title": "Prinsip-Prinsip Difusi",
+                "book-def-title": "Definisi",
+                "book-def-text": `"Pergerakan bersih partikel dari daerah dengan <strong>konsentrasi lebih tinggi</strong> ke daerah dengan <strong>konsentrasi lebih rendah</strong> menuruni gradien konsentrasi, sebagai akibat dari pergerakan acak mereka."`,
+                "book-syll-title": "Konteks Silabus",
+                "book-syll-intro": "Konsep ini penting untuk:",
+                "book-bio-ctx": `<strong class="text-[#2e7d32]">Biologi (B2.1):</strong> Pergerakan masuk dan keluar sel.`,
+                "book-chem-ctx": `<strong class="text-[#1565c0]">Kimia (C2.1):</strong> Sifat partikulat materi.`,
+                "book-factors-title": "Faktor Utama",
+                "book-factors-list": `<li>Suhu (Energi Kinetik)</li><li>Gradien Konsentrasi</li><li>Luas Permukaan</li><li>Jarak Difusi</li>`,
+                "book-syll-ref": `<i class="fas fa-book mr-1"></i> Referensi Silabus: 0653 & 0654`,
+                
+                "sec1-title": `<i class="fas fa-thermometer-half"></i> 1. Suhu`,
+                "sec1-desc": "Suhu lebih tinggi meningkatkan energi kinetik, menyebabkan partikel bergerak lebih cepat (Kimia C2.1).",
+                "sec1-list": `<li class="flex gap-2"><span class="font-bold text-[#d84315]">A.</span> Gula larut lebih cepat dalam teh panas dibandingkan air dingin.</li><li class="flex gap-2"><span class="font-bold text-[#d84315]">B.</span> Bau masakan menyebar dengan cepat ke seluruh rumah.</li><li class="flex gap-2"><span class="font-bold text-[#d84315]">C.</span> Pewarna makanan menyebar cepat dalam gelas kimia air panas.</li><li class="flex gap-2"><span class="font-bold text-[#d84315]">D.</span> Laju difusi gas (seperti parfum) lebih tinggi di musim panas dibanding musim dingin.</li>`,
+                
+                "sec2-title": `<i class="fas fa-chart-area"></i> 2. Gradien Konsentrasi`,
+                "sec2-desc": "Semakin curam gradien (perbedaan), semakin cepat laju difusi (Biologi B2.1).",
+                "sec2-list": `<li class="flex gap-2"><span class="font-bold text-[#1565c0]">A.</span> Oksigen bergerak dari alveolus (tinggi) ke kapiler darah (rendah).</li><li class="flex gap-2"><span class="font-bold text-[#1565c0]">B.</span> CO₂ berdifusi keluar dari stomata daun ke atmosfer.</li><li class="flex gap-2"><span class="font-bold text-[#1565c0]">C.</span> Neurotransmiter berdifusi melintasi celah sinapsis.</li><li class="flex gap-2"><span class="font-bold text-[#1565c0]">D.</span> Penyerapan glukosa di usus halus setelah makan.</li>`,
+
+                "sec3-title": `<i class="fas fa-vector-square"></i> 3. Luas Permukaan`,
+                "sec3-desc": "Luas permukaan yang lebih besar memberikan lebih banyak ruang bagi partikel untuk melintas. Penting untuk adaptasi.",
+                "sec3-list": `<li class="flex gap-2"><span class="font-bold text-[#2e7d32]">A.</span> Mikrovilli di usus halus meningkatkan area penyerapan.</li><li class="flex gap-2"><span class="font-bold text-[#2e7d32]">B.</span> Sel rambut akar pada tanaman memaksimalkan pengambilan air/mineral.</li><li class="flex gap-2"><span class="font-bold text-[#2e7d32]">C.</span> Jutaan alveolus di paru-paru menciptakan permukaan pertukaran gas yang masif.</li><li class="flex gap-2"><span class="font-bold text-[#2e7d32]">D.</span> Lamela pada insang ikan menyediakan luas permukaan tinggi untuk ekstraksi oksigen.</li>`,
+
+                "sec4-title": `<i class="fas fa-ruler-horizontal"></i> 4. Jarak Difusi`,
+                "sec4-desc": "Jarak yang lebih pendek memungkinkan difusi lebih cepat. Penting untuk pertukaran yang efisien.",
+                "sec4-list": `<li class="flex gap-2"><span class="font-bold text-[#6a1b9a]">A.</span> Dinding kapiler hanya setebal satu sel.</li><li class="flex gap-2"><span class="font-bold text-[#6a1b9a]">B.</span> Dinding alveolus di paru-paru sangat tipis.</li><li class="flex gap-2"><span class="font-bold text-[#6a1b9a]">C.</span> Bentuk daun yang pipih mengurangi jarak CO₂ mencapai mesofil.</li><li class="flex gap-2"><span class="font-bold text-[#6a1b9a]">D.</span> Hifa jamur berupa benang tipis untuk menyerap nutrisi dengan cepat.</li>`
+            }
+        };
+
+        let currentLang = 'en';
+        const langToggle = document.getElementById('langToggle');
+
+        langToggle.addEventListener('click', () => {
+            currentLang = currentLang === 'en' ? 'id' : 'en';
+            updateLanguage();
+        });
+
+        function updateLanguage() {
+            const t = translations[currentLang];
+            for (const key in t) {
+                const element = document.getElementById(key);
+                if (element) {
+                    element.innerHTML = t[key];
+                }
+            }
+
+            // Special handling for dynamic button states if needed
+            // Currently startBtn text is inside a span we target directly, so it's fine.
+        }
+
+
+        // --- LOGIC FOR BOOK NAVIGATION ---
+        const bookModal = document.getElementById('bookModal');
+        const openBookBtn = document.getElementById('openBookBtn');
+        const closeBookBtn = document.getElementById('closeBookBtn');
+
+        openBookBtn.addEventListener('click', () => {
+            bookModal.classList.remove('hidden');
+        });
+
+        closeBookBtn.addEventListener('click', () => {
+            bookModal.classList.add('hidden');
+        });
+
+        // Close on click outside
+        bookModal.addEventListener('click', (e) => {
+            if (e.target === bookModal) {
+                bookModal.classList.add('hidden');
+            }
+        });
+
+        // Function called by the 4 new buttons
+        function openBookAt(sectionId) {
+            bookModal.classList.remove('hidden');
+            setTimeout(() => {
+                const element = document.getElementById(sectionId);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    element.classList.add('bg-yellow-50');
+                    setTimeout(() => element.classList.remove('bg-yellow-50'), 1500);
+                }
+            }, 100);
+        }
+
+
+        // --- LOGIC FOR SIMULATION ---
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        let particles = [];
+        let animationId;
+        let isBarrierActive = true;
+        
+        // Simulation State
+        const state = {
+            temperature: 25, 
+            concentration: 50,
+            baseSpeed: 1
+        };
+
+        const tempSlider = document.getElementById('tempSlider');
+        const tempVal = document.getElementById('tempVal');
+        const concSlider = document.getElementById('concSlider');
+        const concVal = document.getElementById('concVal');
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const btnStartText = document.getElementById('btn-start-text');
+
+        function resize() {
+            const parent = canvas.parentElement;
+            canvas.width = parent.clientWidth;
+            canvas.height = parent.clientHeight;
+            width = canvas.width;
+            height = canvas.height;
+        }
+
+        class Particle {
+            constructor(x, y, color, type) {
+                this.x = x;
+                this.y = y;
+                this.radius = 4;
+                this.color = color;
+                this.type = type; 
+                const angle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(angle);
+                this.vy = Math.sin(angle);
+            }
+
+            update() {
+                const speed = state.baseSpeed + (state.temperature / 25); 
+
+                this.x += this.vx * speed;
+                this.y += this.vy * speed;
+
+                if (this.x - this.radius < 0) { this.x = this.radius; this.vx *= -1; }
+                if (this.x + this.radius > width) { this.x = width - this.radius; this.vx *= -1; }
+                if (this.y - this.radius < 0) { this.y = this.radius; this.vy *= -1; }
+                if (this.y + this.radius > height) { this.y = height - this.radius; this.vy *= -1; }
+
+                if (isBarrierActive) {
+                    const mid = width / 2;
+                    if (this.type === 'left' && this.x + this.radius > mid) {
+                        this.x = mid - this.radius;
+                        this.vx *= -1;
+                    }
+                    if (this.type === 'right' && this.x - this.radius < mid) {
+                        this.x = mid + this.radius;
+                        this.vx *= -1;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+
+        function initSimulation() {
+            particles = [];
+            const count = parseInt(state.concentration);
+            
+            for (let i = 0; i < count; i++) {
+                const x = Math.random() * (width / 2 - 20) + 10;
+                const y = Math.random() * (height - 20) + 10;
+                particles.push(new Particle(x, y, '#3b82f6', 'left'));
+            }
+
+            const rightCount = Math.floor(count * 0.2); 
+            
+            for (let i = 0; i < rightCount; i++) {
+                const x = Math.random() * (width / 2 - 20) + (width / 2 + 10);
+                const y = Math.random() * (height - 20) + 10;
+                particles.push(new Particle(x, y, '#ef4444', 'right'));
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            if (isBarrierActive) {
+                ctx.beginPath();
+                ctx.moveTo(width / 2, 0);
+                ctx.lineTo(width / 2, height);
+                ctx.strokeStyle = '#475569';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+            } else {
+                ctx.beginPath();
+                ctx.setLineDash([5, 15]);
+                ctx.moveTo(width / 2, 0);
+                ctx.lineTo(width / 2, height);
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        tempSlider.addEventListener('input', (e) => {
+            state.temperature = parseInt(e.target.value);
+            tempVal.textContent = state.temperature + "°C";
+        });
+
+        concSlider.addEventListener('input', (e) => {
+            state.concentration = parseInt(e.target.value);
+            const lowText = currentLang === 'en' ? "Low" : "Rendah";
+            const medText = currentLang === 'en' ? "Medium" : "Sedang";
+            const highText = currentLang === 'en' ? "High" : "Tinggi";
+            concVal.textContent = state.concentration > 70 ? highText : (state.concentration < 30 ? lowText : medText);
+            if (isBarrierActive) initSimulation();
+        });
+
+        startBtn.addEventListener('click', () => {
+            isBarrierActive = false;
+            const diffusingText = currentLang === 'en' ? "Diffusing..." : "Berdifusi...";
+            btnStartText.textContent = diffusingText;
+            startBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            startBtn.disabled = true;
+        });
+
+        resetBtn.addEventListener('click', () => {
+            isBarrierActive = true;
+            // The text resets via the updateLanguage or default, 
+            // but we need to ensure it matches current lang if not clicked
+            const resetText = currentLang === 'en' ? "Remove Barrier" : "Buka Penghalang";
+            btnStartText.textContent = resetText;
+            
+            startBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+            startBtn.classList.add('bg-green-600');
+            startBtn.disabled = false;
+            initSimulation();
+        });
+
+        window.addEventListener('resize', () => {
+            resize();
+            initSimulation();
+        });
+        
+        resize();
+        initSimulation();
+        animate();
+
+    </script>
+</body>
+</html>
