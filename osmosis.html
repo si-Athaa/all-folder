@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulation Osmosis IGCSE Cambridge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap');
+        body { font-family: 'Noto Sans', sans-serif; }
+        
+        /* Animasi Partikel Air */
+        .water-molecule {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background-color: #3b82f6;
+            border-radius: 50%;
+            opacity: 0.6;
+            pointer-events: none;
+            transition: transform 1s linear;
+        }
+
+        .solute-molecule {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        /* Animasi Sel */
+        .cell-membrane {
+            transition: all 1s ease-in-out;
+        }
+        
+        .vacuole {
+            transition: all 1s ease-in-out;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555; 
+        }
+
+        /* Learning Book Modal Animation */
+        .book-modal {
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            transform: scale(0.95);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .book-modal.active {
+            transform: scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="bg-blue-900 text-white p-4 shadow-md flex-none z-20">
+        <div class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-xl font-bold" data-i18n="mainTitle">Laboratorium Virtual IGCSE: Osmosis</h1>
+                <p class="text-xs text-blue-200" data-i18n="subTitle">Berdasarkan Cambridge IGCSE Combined & Co-ordinated Sciences</p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <!-- Learning Book Button -->
+                <button onclick="toggleBook()" class="flex items-center gap-2 px-3 py-2 bg-yellow-500 hover:bg-yellow-400 text-blue-900 rounded font-bold text-sm transition shadow">
+                    <span>📖</span> <span data-i18n="btnBook">Buka Materi</span>
+                </button>
+
+                <!-- Language Toggle -->
+                <button onclick="toggleLanguage()" class="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded border border-white/30 font-bold text-sm transition">
+                    <span id="langLabel">EN</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Tab Navigation (Moved to header for better layout) -->
+        <div class="container mx-auto mt-4 flex space-x-2">
+            <button onclick="switchTab('potato')" id="btn-potato" class="px-4 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-t-lg text-sm font-semibold transition ring-2 ring-white border-b-0" data-i18n="tabPotato">Eksperimen Kentang</button>
+            <button onclick="switchTab('cells')" id="btn-cells" class="px-4 py-2 bg-blue-800 hover:bg-blue-600 text-white/70 rounded-t-lg text-sm font-semibold transition border-b-0" data-i18n="tabCells">Sel Hewan & Tumbuhan</button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow flex flex-col md:flex-row overflow-hidden relative">
+
+        <!-- TAB 1: POTATO EXPERIMENT -->
+        <div id="tab-potato" class="w-full h-full flex flex-col md:flex-row absolute inset-0 bg-slate-50 transition-opacity duration-300">
+            
+            <!-- Controls & Setup -->
+            <div class="w-full md:w-1/3 p-6 overflow-y-auto border-r border-slate-200 bg-white">
+                <h2 class="text-lg font-bold text-blue-900 mb-2" data-i18n="potSectionTitle">1. Investigasi Osmosis Jaringan Tanaman</h2>
+                <p class="text-sm text-slate-600 mb-4" data-i18n="potDesc">
+                    Menyelidiki efek konsentrasi larutan sukrosa terhadap perubahan massa silinder kentang.
+                </p>
+
+                <div class="bg-blue-50 p-4 rounded-lg mb-6 border border-blue-100">
+                    <h3 class="font-bold text-sm mb-2" data-i18n="setupTitle">Setup Eksperimen</h3>
+                    
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1" data-i18n="selectConc">Pilih Konsentrasi (Molaritas)</label>
+                        <input type="range" id="concSlider" min="0" max="1" step="0.2" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                        <div class="flex justify-between text-xs text-slate-500 mt-1">
+                            <span>0.0M</span><span>0.2M</span><span>0.4M</span><span>0.6M</span><span>0.8M</span><span>1.0M</span>
+                        </div>
+                        <div class="text-center mt-2 font-mono font-bold text-blue-800" id="concDisplay">0.0 M <span data-i18n="distilledWater">(Air Suling)</span></div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+                        <div class="bg-white p-2 rounded shadow-sm border">
+                            <span class="block text-xs text-gray-500" data-i18n="initMass">Massa Awal</span>
+                            <span class="font-bold">5.00 g</span>
+                        </div>
+                        <div class="bg-white p-2 rounded shadow-sm border">
+                            <span class="block text-xs text-gray-500" data-i18n="time">Waktu Rendam</span>
+                            <span class="font-bold">45 Min</span>
+                        </div>
+                    </div>
+
+                    <button onclick="runPotatoExperiment()" id="startPotatoBtn" class="w-full py-2 bg-green-600 hover:bg-green-500 text-white rounded shadow font-bold transition" data-i18n="startExp">
+                        Mulai Eksperimen
+                    </button>
+                </div>
+
+                <!-- Results Log -->
+                <div class="border-t pt-4">
+                    <h3 class="font-bold text-sm mb-2 text-slate-700" data-i18n="resTable">Tabel Hasil Pengamatan</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 border-b">
+                                    <th class="p-2 border-r" data-i18n="thConc">Konsentrasi (M)</th>
+                                    <th class="p-2 border-r" data-i18n="thFinal">Massa Akhir (g)</th>
+                                    <th class="p-2" data-i18n="thChange">% Perubahan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsTableBody">
+                                <!-- Rows added via JS -->
+                            </tbody>
+                        </table>
+                        <p id="emptyMsg" class="text-center text-xs text-gray-400 italic py-4" data-i18n="noData">Belum ada data. Jalankan eksperimen.</p>
+                    </div>
+                    <button onclick="clearData()" class="text-xs text-red-500 hover:text-red-700 mt-2 underline" data-i18n="clearData">Hapus Data</button>
+                </div>
+            </div>
+
+            <!-- Visualization & Graph -->
+            <div class="w-full md:w-2/3 bg-slate-100 p-6 flex flex-col relative">
+                
+                <!-- Beaker View -->
+                <div class="flex-1 flex justify-center items-end pb-8 relative mb-4 bg-white rounded-xl shadow-inner border border-slate-200 overflow-hidden" id="beakerArea">
+                    <div class="absolute top-4 left-4 text-xs font-mono text-gray-400" data-i18n="labView">Tampilan Laboratorium</div>
+                    
+                    <!-- Beaker -->
+                    <div class="relative w-48 h-64 border-l-4 border-r-4 border-b-4 border-gray-300 rounded-b-xl bg-blue-50/30 backdrop-blur-sm flex justify-center items-end overflow-hidden">
+                        <!-- Liquid -->
+                        <div id="liquidLevel" class="absolute bottom-0 w-full h-4/5 bg-blue-200/50 transition-colors duration-500 border-t border-blue-300"></div>
+                        
+                        <!-- Potato Strip -->
+                        <div id="potatoStrip" class="relative z-10 w-8 h-32 bg-yellow-200 border border-yellow-400 rounded-sm shadow-md transition-all duration-1000 origin-center flex items-center justify-center mb-4">
+                            <span class="text-[10px] text-yellow-700 opacity-50 rotate-90 whitespace-nowrap">Solanum tuberosum</span>
+                        </div>
+
+                        <!-- Particles (Dynamic) -->
+                        <div id="particlesContainer" class="absolute inset-0 pointer-events-none z-0"></div>
+                    </div>
+
+                    <!-- Scale -->
+                    <div class="absolute right-10 bottom-10 w-32 h-32 bg-gray-800 rounded-lg p-2 shadow-xl border-t-4 border-gray-600 flex flex-col items-center justify-center">
+                        <div class="w-full bg-green-900 rounded p-2 mb-2 text-right font-mono text-green-400 text-xl shadow-inner" id="scaleDisplay">
+                            0.00 g
+                        </div>
+                        <div class="text-gray-400 text-xs uppercase" data-i18n="scaleLabel">Digital Scale</div>
+                    </div>
+                </div>
+
+                <!-- Graph View -->
+                <div class="h-64 bg-white p-4 rounded-xl shadow-md border border-slate-200 relative">
+                    <h4 class="text-xs font-bold text-gray-500 absolute top-2 left-4" data-i18n="graphTitle">Grafik: Konsentrasi vs % Perubahan Massa</h4>
+                    <canvas id="graphCanvas" class="w-full h-full"></canvas>
+                    <div id="isotonicPointLabel" class="hidden absolute bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded border border-yellow-300 shadow top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" data-i18n="isoPoint">
+                        Titik Isotonik (Perkiraan)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- TAB 2: CELLS SIMULATION -->
+        <div id="tab-cells" class="w-full h-full flex flex-col md:flex-row absolute inset-0 bg-slate-50 transition-opacity duration-300 opacity-0 pointer-events-none">
+            
+            <!-- Controls -->
+            <div class="w-full md:w-1/4 p-6 border-r border-slate-200 bg-white z-10 shadow-lg">
+                <h2 class="text-lg font-bold text-blue-900 mb-4" data-i18n="cellSectionTitle">2. Osmosis Tingkat Seluler</h2>
+                
+                <div class="mb-6">
+                    <h3 class="font-bold text-sm text-slate-700 mb-2" data-i18n="selectCell">Pilih Tipe Sel</h3>
+                    <div class="flex space-x-2">
+                        <button onclick="setCellType('animal')" id="btn-animal" class="flex-1 py-2 border-2 border-red-500 bg-red-50 text-red-700 rounded-lg font-bold text-sm active-type" data-i18n="cellAnimal">Sel Hewan</button>
+                        <button onclick="setCellType('plant')" id="btn-plant" class="flex-1 py-2 border border-slate-300 text-slate-600 rounded-lg font-bold text-sm" data-i18n="cellPlant">Sel Tumbuhan</button>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="font-bold text-sm text-slate-700 mb-2" data-i18n="solCondition">Kondisi Larutan Luar</h3>
+                    <div class="flex flex-col space-y-2">
+                        <button onclick="setSolution('hypotonic')" id="btn-hypo" class="w-full text-left px-4 py-3 rounded-lg border hover:bg-blue-50 transition group">
+                            <span class="font-bold text-blue-800 block" data-i18n="hypoTitle">Hipotonik (Air Murni)</span>
+                            <span class="text-xs text-gray-500 group-hover:text-blue-600" data-i18n="hypoDesc">Potensial air luar lebih tinggi</span>
+                        </button>
+                        <button onclick="setSolution('isotonic')" id="btn-iso" class="w-full text-left px-4 py-3 rounded-lg border bg-blue-100 border-blue-500 ring-1 ring-blue-500 transition group">
+                            <span class="font-bold text-blue-800 block" data-i18n="isoTitle">Isotonik</span>
+                            <span class="text-xs text-gray-500 group-hover:text-blue-600" data-i18n="isoDesc">Potensial air seimbang</span>
+                        </button>
+                        <button onclick="setSolution('hypertonic')" id="btn-hyper" class="w-full text-left px-4 py-3 rounded-lg border hover:bg-blue-50 transition group">
+                            <span class="font-bold text-blue-800 block" data-i18n="hyperTitle">Hipertonik (Gula Pekat)</span>
+                            <span class="text-xs text-gray-500 group-hover:text-blue-600" data-i18n="hyperDesc">Potensial air luar lebih rendah</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-yellow-50 p-4 rounded border border-yellow-200">
+                    <h4 class="font-bold text-xs text-yellow-800 uppercase mb-1" data-i18n="cellStatus">Status Sel</h4>
+                    <p id="cellStatusText" class="text-sm font-medium text-gray-800">Normal</p>
+                    <p id="netMovementText" class="text-xs text-gray-600 mt-2 italic">Pergerakan netto air: Nol</p>
+                </div>
+            </div>
+
+            <!-- Microscope View -->
+            <div class="flex-1 bg-black relative flex items-center justify-center overflow-hidden">
+                <div class="absolute top-4 left-4 text-gray-500 font-mono text-sm" data-i18n="microView">Light Microscope View (400x)</div>
+                
+                <!-- Circular Field of View -->
+                <div class="w-[450px] h-[450px] rounded-full bg-white relative overflow-hidden shadow-[0_0_0_100vw_rgba(20,20,20,0.95)] border-4 border-gray-800">
+                    
+                    <!-- Environment Particles -->
+                    <canvas id="envCanvas" class="absolute inset-0 z-0"></canvas>
+
+                    <!-- The Cell Container -->
+                    <div id="cellContainer" class="absolute inset-0 flex items-center justify-center z-10 transition-transform duration-1000">
+                        
+                        <!-- ANIMAL CELL (RBC) -->
+                        <div id="animalCell" class="relative w-48 h-48 transition-all duration-1000 ease-in-out">
+                            <!-- Membrane -->
+                            <div class="absolute inset-0 bg-red-400/80 rounded-full border-4 border-red-600 shadow-inner flex items-center justify-center transition-all duration-1000" id="animalMembrane">
+                                <!-- Cytoplasm dimple -->
+                                <div class="w-16 h-16 bg-red-600/30 rounded-full blur-md" id="animalDimple"></div>
+                            </div>
+                            <div class="absolute -top-8 w-full text-center text-xs font-bold text-red-900 bg-white/70 px-1 rounded hidden" id="lysisLabel">HAEMOLYSIS (BURST)</div>
+                        </div>
+
+                        <!-- PLANT CELL -->
+                        <div id="plantCell" class="hidden relative w-40 h-56 transition-all duration-1000">
+                            <!-- Cell Wall (Rigid, doesn't change much) -->
+                            <div class="absolute inset-0 border-[8px] border-green-700 bg-transparent rounded-lg z-20"></div>
+                            
+                            <!-- Cell Membrane & Cytoplasm (Shrinks/Swells) -->
+                            <div id="plantMembrane" class="absolute inset-[6px] bg-green-200/80 border-2 border-green-600 rounded transition-all duration-1000 ease-in-out z-10 flex items-center justify-center">
+                                <!-- Vacuole -->
+                                <div id="plantVacuole" class="w-[80%] h-[70%] bg-blue-100/60 border border-blue-300 rounded transition-all duration-1000"></div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Water Flow Arrows (Visual Aid) -->
+                    <div id="flowArrows" class="absolute inset-0 flex items-center justify-center pointer-events-none z-30 opacity-0 transition-opacity duration-500">
+                        <!-- Arrows generated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Learning Book Modal -->
+    <div id="learningBookModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 book-modal hidden">
+        <div class="bg-white w-full max-w-3xl h-[85vh] rounded-xl shadow-2xl flex flex-col overflow-hidden m-4">
+            <!-- Modal Header -->
+            <div class="bg-blue-900 text-white p-4 flex justify-between items-center flex-none">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">📖</span>
+                    <h2 class="text-lg font-bold" data-i18n="bookTitle">Buku Materi Osmosis IGCSE</h2>
+                </div>
+                <button onclick="toggleBook()" class="text-white hover:text-red-300 text-xl font-bold px-2">&times;</button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-8 overflow-y-auto flex-grow prose prose-slate max-w-none text-sm md:text-base">
+                
+                <div class="mb-8 border-b pb-4">
+                    <h3 class="text-xl font-bold text-blue-800 mb-2" data-i18n="bk_defTitle">Apa itu Osmosis?</h3>
+                    <p class="mb-2" data-i18n="bk_def1"><strong>Definisi:</strong> Pergerakan bersih molekul air dari daerah dengan <em>potensial air lebih tinggi</em> (larutan encer) ke daerah dengan <em>potensial air lebih rendah</em> (larutan pekat) melalui membran permeabel sebagian.</p>
+                    <div class="bg-blue-50 p-4 rounded border-l-4 border-blue-500 italic text-slate-600" data-i18n="bk_tip">
+                        Tips Ujian: Jangan pernah mengatakan "konsentrasi air". Selalu gunakan istilah "Potensial Air". Air bergerak dari Tinggi ke Rendah.
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8 mb-8">
+                    <div>
+                        <h4 class="font-bold text-green-800 mb-2" data-i18n="bk_plantTitle">Pada Sel Tumbuhan</h4>
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li data-i18n="bk_p1"><strong>Dalam Air Murni (Hipotonik):</strong> Air masuk. Vakuola membengkak. Membran menekan dinding sel. Sel menjadi <strong>Turgid</strong>. Dinding sel mencegah pecah.</li>
+                            <li data-i18n="bk_p2"><strong>Dalam Gula Pekat (Hipertonik):</strong> Air keluar. Vakuola menyusut. Membran terlepas dari dinding sel. Sel mengalami <strong>Plasmolisis</strong> (Flaccid).</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-red-800 mb-2" data-i18n="bk_animalTitle">Pada Sel Hewan</h4>
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li data-i18n="bk_a1"><strong>Dalam Air Murni (Hipotonik):</strong> Air masuk. Sel membengkak dan akhirnya pecah (Lisis/Haemolisis) karena tidak ada dinding sel.</li>
+                            <li data-i18n="bk_a2"><strong>Dalam Gula Pekat (Hipertonik):</strong> Air keluar. Sel menyusut dan berkerut. Disebut <strong>Krenasi</strong>.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="border-t pt-4">
+                    <h3 class="text-xl font-bold text-blue-800 mb-2" data-i18n="bk_expTitle">Tentang Eksperimen Kentang</h3>
+                    <p data-i18n="bk_expDesc">Eksperimen ini mengukur perubahan massa. Jika massa bertambah, air masuk (larutan luar memiliki potensial air lebih tinggi). Jika massa berkurang, air keluar. Titik di mana tidak ada perubahan massa adalah estimasi konsentrasi zat terlarut di dalam sel.</p>
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="bg-slate-100 p-4 border-t flex justify-end">
+                <button onclick="toggleBook()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold" data-i18n="btnClose">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === TRANSLATION DATA ===
+        let currentLang = 'id';
+        
+        const i18n = {
+            id: {
+                mainTitle: "Laboratorium Virtual IGCSE: Osmosis",
+                subTitle: "Berdasarkan Cambridge IGCSE Combined & Co-ordinated Sciences",
+                btnBook: "Buka Materi",
+                tabPotato: "Eksperimen Kentang",
+                tabCells: "Sel Hewan & Tumbuhan",
+                
+                // Potato Section
+                potSectionTitle: "1. Investigasi Osmosis Jaringan Tanaman",
+                potDesc: "Menyelidiki efek konsentrasi larutan sukrosa terhadap perubahan massa silinder kentang.",
+                setupTitle: "Setup Eksperimen",
+                selectConc: "Pilih Konsentrasi (Molaritas)",
+                distilledWater: "(Air Suling)",
+                initMass: "Massa Awal",
+                time: "Waktu Rendam",
+                startExp: "Mulai Eksperimen",
+                runningExp: "Sedang bereaksi...",
+                resTable: "Tabel Hasil Pengamatan",
+                thConc: "Konsentrasi (M)",
+                thFinal: "Massa Akhir (g)",
+                thChange: "% Perubahan",
+                noData: "Belum ada data. Jalankan eksperimen.",
+                clearData: "Hapus Data",
+                labView: "Tampilan Laboratorium",
+                scaleLabel: "Timbangan Digital",
+                graphTitle: "Grafik: Konsentrasi vs % Perubahan Massa",
+                graphYAxis: "Perubahan Massa",
+                isoPoint: "Titik Isotonik (Perkiraan)",
+
+                // Cell Section
+                cellSectionTitle: "2. Osmosis Tingkat Seluler",
+                selectCell: "Pilih Tipe Sel",
+                cellAnimal: "Sel Hewan",
+                cellPlant: "Sel Tumbuhan",
+                solCondition: "Kondisi Larutan Luar",
+                hypoTitle: "Hipotonik (Air Murni)",
+                hypoDesc: "Potensial air luar lebih tinggi",
+                isoTitle: "Isotonik",
+                isoDesc: "Potensial air seimbang",
+                hyperTitle: "Hipertonik (Gula Pekat)",
+                hyperDesc: "Potensial air luar lebih rendah",
+                cellStatus: "Status Sel",
+                microView: "Tampilan Mikroskop (400x)",
+                
+                // Dynamic Status
+                st_normal: "Normal",
+                st_lysis: "Lisis (Pecah) / Haemolysis",
+                st_turgid: "Turgid (Normal untuk Tumbuhan)",
+                st_crenated: "Krenasi (Mengerut)",
+                st_plasmolyzed: "Plasmolisis (Membran lepas dari dinding)",
+                
+                mv_normal: "Air masuk dan keluar dalam jumlah yang sama.",
+                mv_in: "Netto air masuk ke dalam sel (Endosmosis).",
+                mv_out: "Netto air keluar dari sel (Eksosmosis).",
+
+                // Book
+                bookTitle: "Buku Materi Osmosis IGCSE",
+                bk_defTitle: "Apa itu Osmosis?",
+                bk_def1: "<strong>Definisi:</strong> Pergerakan bersih molekul air dari daerah dengan <em>potensial air lebih tinggi</em> (larutan encer) ke daerah dengan <em>potensial air lebih rendah</em> (larutan pekat) melalui membran permeabel sebagian.",
+                bk_tip: "Tips Ujian: Jangan pernah mengatakan 'konsentrasi air'. Selalu gunakan istilah 'Potensial Air'. Air bergerak dari Tinggi ke Rendah.",
+                bk_plantTitle: "Pada Sel Tumbuhan",
+                bk_p1: "<strong>Dalam Air Murni (Hipotonik):</strong> Air masuk. Vakuola membengkak. Membran menekan dinding sel. Sel menjadi <strong>Turgid</strong>. Dinding sel mencegah pecah.",
+                bk_p2: "<strong>Dalam Gula Pekat (Hipertonik):</strong> Air keluar. Vakuola menyusut. Membran terlepas dari dinding sel. Sel mengalami <strong>Plasmolisis</strong> (Flaccid).",
+                bk_animalTitle: "Pada Sel Hewan",
+                bk_a1: "<strong>Dalam Air Murni (Hipotonik):</strong> Air masuk. Sel membengkak dan akhirnya pecah (Lisis/Haemolisis) karena tidak ada dinding sel.",
+                bk_a2: "<strong>Dalam Gula Pekat (Hipertonik):</strong> Air keluar. Sel menyusut dan berkerut. Disebut <strong>Krenasi</strong>.",
+                bk_expTitle: "Tentang Eksperimen Kentang",
+                bk_expDesc: "Eksperimen ini mengukur perubahan massa. Jika massa bertambah, air masuk (larutan luar memiliki potensial air lebih tinggi). Jika massa berkurang, air keluar. Titik di mana tidak ada perubahan massa adalah estimasi konsentrasi zat terlarut di dalam sel.",
+                btnClose: "Tutup"
+            },
+            en: {
+                mainTitle: "IGCSE Virtual Lab: Osmosis",
+                subTitle: "Based on Cambridge IGCSE Combined & Co-ordinated Sciences",
+                btnBook: "Open Theory",
+                tabPotato: "Potato Experiment",
+                tabCells: "Animal & Plant Cells",
+                
+                // Potato Section
+                potSectionTitle: "1. Investigation of Osmosis in Plant Tissue",
+                potDesc: "Investigate the effect of sucrose solution concentration on the mass change of potato cylinders.",
+                setupTitle: "Experiment Setup",
+                selectConc: "Select Concentration (Molarity)",
+                distilledWater: "(Distilled Water)",
+                initMass: "Initial Mass",
+                time: "Soak Time",
+                startExp: "Start Experiment",
+                runningExp: "Running...",
+                resTable: "Results Table",
+                thConc: "Concentration (M)",
+                thFinal: "Final Mass (g)",
+                thChange: "% Change",
+                noData: "No data yet. Run experiment.",
+                clearData: "Clear Data",
+                labView: "Lab View",
+                scaleLabel: "Digital Scale",
+                graphTitle: "Graph: Concentration vs % Mass Change",
+                graphYAxis: "Mass Change",
+                isoPoint: "Isotonic Point (Approx)",
+
+                // Cell Section
+                cellSectionTitle: "2. Cellular Osmosis",
+                selectCell: "Select Cell Type",
+                cellAnimal: "Animal Cell",
+                cellPlant: "Plant Cell",
+                solCondition: "External Solution Condition",
+                hypoTitle: "Hypotonic (Pure Water)",
+                hypoDesc: "Higher water potential outside",
+                isoTitle: "Isotonic",
+                isoDesc: "Balanced water potential",
+                hyperTitle: "Hypertonic (Conc. Sugar)",
+                hyperDesc: "Lower water potential outside",
+                cellStatus: "Cell Status",
+                microView: "Microscope View (400x)",
+                
+                // Dynamic Status
+                st_normal: "Normal",
+                st_lysis: "Lysis (Burst) / Haemolysis",
+                st_turgid: "Turgid (Normal for Plants)",
+                st_crenated: "Crenated (Shrunken)",
+                st_plasmolyzed: "Plasmolyzed (Membrane pulls away)",
+                
+                mv_normal: "Net movement of water is zero.",
+                mv_in: "Net movement of water INTO cell (Endosmosis).",
+                mv_out: "Net movement of water OUT of cell (Exosmosis).",
+
+                // Book
+                bookTitle: "IGCSE Osmosis Theory",
+                bk_defTitle: "What is Osmosis?",
+                bk_def1: "<strong>Definition:</strong> The net movement of water molecules from a region of <em>higher water potential</em> (dilute solution) to a region of <em>lower water potential</em> (concentrated solution) through a partially permeable membrane.",
+                bk_tip: "Exam Tip: Never say 'water concentration'. Always use the term 'Water Potential'. Water moves from High to Low Potential.",
+                bk_plantTitle: "In Plant Cells",
+                bk_p1: "<strong>In Pure Water (Hypotonic):</strong> Water enters. Vacuole swells. Membrane pushes against cell wall. Cell becomes <strong>Turgid</strong>. Cell wall prevents bursting.",
+                bk_p2: "<strong>In Concentrated Sugar (Hypertonic):</strong> Water leaves. Vacuole shrinks. Membrane pulls away from cell wall. Cell becomes <strong>Plasmolyzed</strong> (Flaccid).",
+                bk_animalTitle: "In Animal Cells",
+                bk_a1: "<strong>In Pure Water (Hypotonic):</strong> Water enters. Cell swells and eventually bursts (Lysis/Haemolysis) because there is no cell wall.",
+                bk_a2: "<strong>In Concentrated Sugar (Hypertonic):</strong> Water leaves. Cell shrinks and crinkles. This is called <strong>Crenation</strong>.",
+                bk_expTitle: "About Potato Experiment",
+                bk_expDesc: "This experiment measures mass change. If mass increases, water entered (external solution had higher water potential). If mass decreases, water left. The point of zero mass change is the estimate of the cell's internal solute concentration.",
+                btnClose: "Close"
+            }
+        };
+
+        // === APP STATE ===
+        const state = {
+            potato: {
+                initialMass: 5.00,
+                concentration: 0.0,
+                history: [], 
+                isRunning: false
+            },
+            cell: {
+                type: 'animal',
+                solution: 'isotonic'
+            }
+        };
+
+        // === LANGUAGE LOGIC ===
+        function toggleLanguage() {
+            currentLang = currentLang === 'id' ? 'en' : 'id';
+            document.getElementById('langLabel').innerText = currentLang === 'id' ? 'EN' : 'ID'; // Button shows what you switch TO or current? Let's show current code.
+            document.getElementById('langLabel').innerText = currentLang.toUpperCase(); 
+
+            // Update all static text
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if(i18n[currentLang][key]) {
+                    el.innerHTML = i18n[currentLang][key];
+                }
+            });
+
+            // Update Dynamic Elements
+            updateConcDisplay();
+            updateTable();
+            drawGraph();
+            updateCellVisuals();
+        }
+        
+        function t(key) {
+            return i18n[currentLang][key] || key;
+        }
+
+        // === BOOK LOGIC ===
+        function toggleBook() {
+            const modal = document.getElementById('learningBookModal');
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                // Allow small delay for transition
+                setTimeout(() => modal.classList.add('active'), 10);
+            } else {
+                modal.classList.remove('active');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            }
+        }
+
+
+        // === TAB SWITCHING ===
+        function switchTab(tab) {
+            const potatoTab = document.getElementById('tab-potato');
+            const cellsTab = document.getElementById('tab-cells');
+            const btnPotato = document.getElementById('btn-potato');
+            const btnCells = document.getElementById('btn-cells');
+
+            if (tab === 'potato') {
+                potatoTab.classList.remove('opacity-0', 'pointer-events-none');
+                cellsTab.classList.add('opacity-0', 'pointer-events-none');
+                
+                btnPotato.classList.remove('text-white/70');
+                btnPotato.classList.add('ring-2', 'ring-white', 'text-white');
+                btnCells.classList.add('text-white/70');
+                btnCells.classList.remove('ring-2', 'ring-white', 'text-white');
+                
+                requestAnimationFrame(drawGraph);
+            } else {
+                cellsTab.classList.remove('opacity-0', 'pointer-events-none');
+                potatoTab.classList.add('opacity-0', 'pointer-events-none');
+
+                btnCells.classList.remove('text-white/70');
+                btnCells.classList.add('ring-2', 'ring-white', 'text-white');
+                btnPotato.classList.add('text-white/70');
+                btnPotato.classList.remove('ring-2', 'ring-white', 'text-white');
+                
+                startCellAnimation();
+            }
+        }
+
+        // ==========================================
+        // PART 1: POTATO EXPERIMENT LOGIC
+        // ==========================================
+
+        const concSlider = document.getElementById('concSlider');
+        const concDisplay = document.getElementById('concDisplay');
+        
+        function updateConcDisplay() {
+            const val = state.potato.concentration.toFixed(1);
+            let text = `${val} M `;
+            if(parseFloat(val) === 0) text += `<span data-i18n="distilledWater">${t('distilledWater')}</span>`;
+            concDisplay.innerHTML = text;
+        }
+
+        concSlider.addEventListener('input', (e) => {
+            state.potato.concentration = parseFloat(e.target.value);
+            updateConcDisplay();
+            
+            // Visual feedback: darkening liquid
+            const opacity = 0.1 + (state.potato.concentration * 0.5);
+            document.getElementById('liquidLevel').style.backgroundColor = state.potato.concentration > 0 ? `rgba(234, 179, 8, ${state.potato.concentration * 0.3})` : `rgba(59, 130, 246, 0.2)`;
+            
+            updateParticles(state.potato.concentration);
+            resetPotatoVisual();
+        });
+
+        function updateParticles(conc) {
+            const container = document.getElementById('particlesContainer');
+            container.innerHTML = '';
+            const count = Math.floor(conc * 50);
+            for(let i=0; i<count; i++) {
+                const p = document.createElement('div');
+                p.className = 'solute-molecule';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.top = (Math.random() * 80 + 20) + '%';
+                container.appendChild(p);
+            }
+        }
+
+        function runPotatoExperiment() {
+            if (state.potato.isRunning) return;
+            state.potato.isRunning = true;
+            
+            const btn = document.getElementById('startPotatoBtn');
+            btn.innerText = t('runningExp');
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            document.getElementById('scaleDisplay').innerText = "---";
+
+            const isotonicPoint = 0.35; 
+            const maxChange = 25; 
+            let percentChange = (isotonicPoint - state.potato.concentration) * 45; 
+            percentChange += (Math.random() * 2 - 1); 
+
+            const finalMass = state.potato.initialMass * (1 + (percentChange / 100));
+            const potato = document.getElementById('potatoStrip');
+            
+            let scaleFactor = 1 + (percentChange/100 * 0.5); 
+            if(scaleFactor > 1.15) scaleFactor = 1.15;
+            if(scaleFactor < 0.85) scaleFactor = 0.85;
+
+            if (percentChange < -5) {
+                potato.style.borderRadius = "8px"; 
+                potato.style.transform = `scale(${scaleFactor}) rotate(2deg)`;
+                potato.style.backgroundColor = "#eab308"; 
+            } else if (percentChange > 5) {
+                potato.style.borderRadius = "0px";
+                potato.style.transform = `scale(${scaleFactor})`;
+                potato.style.backgroundColor = "#fef08a"; 
+            } else {
+                potato.style.transform = `scale(1)`;
+            }
+
+            setTimeout(() => {
+                state.potato.isRunning = false;
+                btn.innerText = t('startExp');
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+                document.getElementById('scaleDisplay').innerText = finalMass.toFixed(2) + " g";
+                
+                const dataPoint = {
+                    conc: state.potato.concentration,
+                    finalMass: finalMass.toFixed(2),
+                    change: percentChange.toFixed(1)
+                };
+                
+                state.potato.history = state.potato.history.filter(h => h.conc !== dataPoint.conc);
+                state.potato.history.push(dataPoint);
+                state.potato.history.sort((a,b) => a.conc - b.conc);
+
+                updateTable();
+                drawGraph();
+
+            }, 1500);
+        }
+
+        function resetPotatoVisual() {
+            const potato = document.getElementById('potatoStrip');
+            potato.style.transform = 'scale(1)';
+            potato.style.borderRadius = '2px';
+            document.getElementById('scaleDisplay').innerText = state.potato.initialMass.toFixed(2) + " g";
+        }
+
+        function updateTable() {
+            const tbody = document.getElementById('resultsTableBody');
+            const emptyMsg = document.getElementById('emptyMsg');
+            
+            if(state.potato.history.length > 0) emptyMsg.style.display = 'none';
+            else emptyMsg.style.display = 'block';
+            
+            tbody.innerHTML = '';
+            state.potato.history.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b hover:bg-slate-50";
+                const colorClass = row.change > 0 ? "text-green-600" : (row.change < 0 ? "text-red-600" : "text-gray-600");
+                const sign = row.change > 0 ? "+" : "";
+                
+                tr.innerHTML = `
+                    <td class="p-2 border-r font-mono">${row.conc.toFixed(1)}</td>
+                    <td class="p-2 border-r font-mono">${row.finalMass}</td>
+                    <td class="p-2 font-bold ${colorClass}">${sign}${row.change}%</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function clearData() {
+            state.potato.history = [];
+            updateTable();
+            drawGraph();
+            resetPotatoVisual();
+        }
+
+        function drawGraph() {
+            const canvas = document.getElementById('graphCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+            
+            const w = canvas.width;
+            const h = canvas.height;
+            const padding = 35;
+
+            ctx.clearRect(0, 0, w, h);
+
+            ctx.beginPath();
+            ctx.strokeStyle = "#94a3b8";
+            ctx.lineWidth = 2;
+            
+            const yZero = h / 2;
+            
+            // Axes
+            ctx.moveTo(padding, yZero);
+            ctx.lineTo(w - padding, yZero); 
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, h - padding);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = "#64748b";
+            ctx.font = "10px sans-serif";
+            ctx.fillText("0", padding - 15, yZero + 4);
+            ctx.fillText("+%", padding - 25, padding);
+            ctx.fillText("-%", padding - 25, h - padding);
+            ctx.fillText(t('thConc'), w - 80, yZero + 15);
+
+            // Grid
+            ctx.strokeStyle = "#e2e8f0";
+            ctx.lineWidth = 1;
+            const stepX = (w - 2 * padding) / 5;
+            
+            for(let i=0; i<=5; i++) {
+                const x = padding + (i * stepX);
+                ctx.beginPath();
+                ctx.moveTo(x, padding);
+                ctx.lineTo(x, h - padding);
+                ctx.stroke();
+                ctx.fillText((i * 0.2).toFixed(1), x - 8, yZero + 15);
+            }
+
+            // Points
+            if (state.potato.history.length === 0) return;
+
+            ctx.beginPath();
+            ctx.strokeStyle = "#2563eb";
+            ctx.lineWidth = 2;
+
+            state.potato.history.forEach((pt, index) => {
+                const x = padding + (pt.conc / 1.0) * (w - 2 * padding);
+                const maxRange = 30; 
+                const y = yZero - (pt.change / maxRange) * (yZero - padding);
+                
+                if (index === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            state.potato.history.forEach(pt => {
+                const x = padding + (pt.conc / 1.0) * (w - 2 * padding);
+                const maxRange = 30; 
+                const y = yZero - (pt.change / maxRange) * (yZero - padding);
+                
+                ctx.beginPath();
+                ctx.fillStyle = pt.change >= 0 ? "#16a34a" : "#dc2626";
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+
+        // ==========================================
+        // PART 2: CELL SIMULATION LOGIC
+        // ==========================================
+
+        function setCellType(type) {
+            state.cell.type = type;
+            
+            const btnA = document.getElementById('btn-animal');
+            const btnP = document.getElementById('btn-plant');
+            const aCell = document.getElementById('animalCell');
+            const pCell = document.getElementById('plantCell');
+
+            if(type === 'animal') {
+                btnA.className = "flex-1 py-2 border-2 border-red-500 bg-red-50 text-red-700 rounded-lg font-bold text-sm active-type";
+                btnP.className = "flex-1 py-2 border border-slate-300 text-slate-600 rounded-lg font-bold text-sm";
+                aCell.classList.remove('hidden');
+                pCell.classList.add('hidden');
+            } else {
+                btnP.className = "flex-1 py-2 border-2 border-green-500 bg-green-50 text-green-700 rounded-lg font-bold text-sm active-type";
+                btnA.className = "flex-1 py-2 border border-slate-300 text-slate-600 rounded-lg font-bold text-sm";
+                pCell.classList.remove('hidden');
+                aCell.classList.add('hidden');
+            }
+            updateCellVisuals();
+        }
+
+        function setSolution(sol) {
+            state.cell.solution = sol;
+            ['hypo', 'iso', 'hyper'].forEach(k => { /* reset handled by class rebuild */ });
+
+            document.getElementById('btn-hypo').className = `w-full text-left px-4 py-3 rounded-lg border transition group ${sol === 'hypotonic' ? 'bg-blue-100 border-blue-500 ring-1 ring-blue-500' : 'hover:bg-blue-50'}`;
+            document.getElementById('btn-iso').className = `w-full text-left px-4 py-3 rounded-lg border transition group ${sol === 'isotonic' ? 'bg-blue-100 border-blue-500 ring-1 ring-blue-500' : 'hover:bg-blue-50'}`;
+            document.getElementById('btn-hyper').className = `w-full text-left px-4 py-3 rounded-lg border transition group ${sol === 'hypertonic' ? 'bg-blue-100 border-blue-500 ring-1 ring-blue-500' : 'hover:bg-blue-50'}`;
+
+            updateCellVisuals();
+        }
+
+        function updateCellVisuals() {
+            const statusText = document.getElementById('cellStatusText');
+            const netText = document.getElementById('netMovementText');
+            const arrows = document.getElementById('flowArrows');
+            
+            const aMembrane = document.getElementById('animalMembrane');
+            const aDimple = document.getElementById('animalDimple');
+            const lysisLabel = document.getElementById('lysisLabel');
+            const pMembrane = document.getElementById('plantMembrane');
+            const pVacuole = document.getElementById('plantVacuole');
+
+            lysisLabel.classList.add('hidden');
+            aMembrane.style.opacity = '1';
+            aMembrane.style.borderStyle = 'solid';
+
+            if (state.cell.solution === 'isotonic') {
+                statusText.innerText = t('st_normal');
+                netText.innerText = t('mv_normal');
+                
+                aMembrane.style.transform = 'scale(1)';
+                aDimple.style.opacity = '1';
+                pMembrane.style.inset = '6px';
+                pVacuole.style.transform = 'scale(1)';
+                arrows.innerHTML = `<div class="text-blue-500 font-bold text-2xl">⇄</div>`;
+
+            } else if (state.cell.solution === 'hypotonic') {
+                netText.innerText = t('mv_in');
+                
+                if (state.cell.type === 'animal') {
+                    statusText.innerText = t('st_lysis');
+                    aMembrane.style.transform = 'scale(1.4)';
+                    aDimple.style.opacity = '0.2'; 
+                    setTimeout(() => {
+                        if(state.cell.solution === 'hypotonic' && state.cell.type === 'animal') {
+                            lysisLabel.classList.remove('hidden');
+                            aMembrane.style.opacity = '0.5';
+                            aMembrane.style.borderStyle = 'dashed';
+                        }
+                    }, 1200);
+
+                } else {
+                    statusText.innerText = t('st_turgid');
+                    pMembrane.style.inset = '2px'; 
+                    pVacuole.style.transform = 'scale(1.1)';
+                }
+                arrows.innerHTML = `<div class="text-blue-600 font-bold text-4xl rotate-90">↑</div><div class="absolute text-blue-600 font-bold text-4xl rotate-90 scale-50 mt-10">↓</div>`;
+
+            } else if (state.cell.solution === 'hypertonic') {
+                netText.innerText = t('mv_out');
+
+                if (state.cell.type === 'animal') {
+                    statusText.innerText = t('st_crenated');
+                    aMembrane.style.transform = 'scale(0.7)';
+                    aMembrane.style.borderRadius = '40% 60% 70% 30% / 40% 50% 60% 50%'; 
+                } else {
+                    statusText.innerText = t('st_plasmolyzed');
+                    pMembrane.style.inset = '20px'; 
+                    pVacuole.style.transform = 'scale(0.6)';
+                }
+                arrows.innerHTML = `<div class="text-blue-600 font-bold text-4xl rotate-90 mt-10">↓</div><div class="absolute text-blue-600 font-bold text-4xl rotate-90 scale-50 -mt-10">↑</div>`; 
+            }
+
+            arrows.classList.remove('opacity-0');
+            arrows.classList.add('fade-in');
+        }
+
+        // === CANVAS ANIMATION ===
+        const envCanvas = document.getElementById('envCanvas');
+        const eCtx = envCanvas.getContext('2d');
+        let particles = [];
+
+        function startCellAnimation() {
+            envCanvas.width = 450;
+            envCanvas.height = 450;
+            createEnvParticles();
+            animateEnv();
+        }
+
+        function createEnvParticles() {
+            particles = [];
+            for(let i=0; i<80; i++) {
+                particles.push({
+                    x: Math.random() * 450,
+                    y: Math.random() * 450,
+                    vx: (Math.random() - 0.5) * 1,
+                    vy: (Math.random() - 0.5) * 1,
+                    isSolute: Math.random() > 0.7
+                });
+            }
+        }
+
+        function animateEnv() {
+            if(document.getElementById('tab-cells').classList.contains('opacity-0')) return;
+
+            eCtx.clearRect(0, 0, 450, 450);
+            
+            let soluteTarget = 0;
+            if(state.cell.solution === 'hypertonic') soluteTarget = 0.5; 
+            else if(state.cell.solution === 'isotonic') soluteTarget = 0.2;
+            else soluteTarget = 0.05; 
+
+            eCtx.fillStyle = state.cell.solution === 'hypertonic' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.05)';
+            eCtx.fillRect(0,0,450,450);
+
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if(p.x < 0 || p.x > 450) p.vx *= -1;
+                if(p.y < 0 || p.y > 450) p.vy *= -1;
+
+                if (p.isSolute) {
+                    if (Math.random() < soluteTarget * 2) { 
+                        eCtx.beginPath();
+                        eCtx.fillStyle = '#ef4444';
+                        eCtx.arc(p.x, p.y, 3, 0, Math.PI*2);
+                        eCtx.fill();
+                    }
+                } else {
+                    eCtx.beginPath();
+                    eCtx.fillStyle = '#3b82f6';
+                    eCtx.arc(p.x, p.y, 2, 0, Math.PI*2);
+                    eCtx.fill();
+                }
+            });
+
+            requestAnimationFrame(animateEnv);
+        }
+
+        // Initialize
+        updateParticles(0);
+        drawGraph();
+        // Set initial text to ID
+        toggleLanguage(); // Switch once to init
+        toggleLanguage(); // Switch back to ID
+        
+        // Ensure book is hidden initially
+        document.getElementById('learningBookModal').classList.add('hidden');
+
+    </script>
+</body>
+</html>
