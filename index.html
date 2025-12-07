@@ -163,17 +163,17 @@
                         </div>
                     </div>
                     
+                    <!-- Fixed: Removed inline onload to prevent ReferenceError -->
                     <iframe 
                         id="content-frame"
                         src="" 
                         class="w-full h-full opacity-0 iframe-container"
                         frameborder="0"
                         allowfullscreen
-                        onload="onFrameLoad()"
                     ></iframe>
                 </div>
             </div>
-            <p class="text-center text-[10px] text-gray-400 mt-2">v1.2 • Cambridge IGCSE Biology</p>
+            <p class="text-center text-[10px] text-gray-400 mt-2">v1.2.1 • Cambridge IGCSE Biology</p>
         </main>
     </div>
 
@@ -221,28 +221,28 @@
         // --- CONFIGURATION ---
         const simulations = {
             'diffusion': {
-                path: 'all-folder-main/diffusion.html',
+                path: 'science-simulation-1/diffusion.html',
                 title_en: 'Diffusion',
                 title_id: 'Difusi',
                 group_en: 'B2. Movement in Cells',
                 group_id: 'B2. Pergerakan dalam Sel'
             },
             'osmosis': {
-                path: 'all-folder-main/osmosis.html',
+                path: 'science-simulation-1/osmosis.html',
                 title_en: 'Osmosis',
                 title_id: 'Osmosis',
                 group_en: 'B2. Movement in Cells',
                 group_id: 'B2. Pergerakan dalam Sel'
             },
             'active-transport': {
-                path: 'all-folder-main/active-transport.html',
+                path: 'science-simulation-1/active-transport.html',
                 title_en: 'Active Transport',
                 title_id: 'Transpor Aktif',
                 group_en: 'B2. Movement in Cells',
                 group_id: 'B2. Pergerakan dalam Sel'
             },
             'characteristics': {
-                path: 'all-folder-main/characteristic-of-livingthings.html',
+                path: 'science-simulation-1/characteristic-of-livingthings.html',
                 title_en: 'Characteristics of Living Things',
                 title_id: 'Ciri Makhluk Hidup',
                 group_en: 'B1. Living Organisms',
@@ -258,6 +258,17 @@
         const btnId = document.getElementById('lang-id');
 
         // --- FUNCTIONS ---
+        
+        // Define onFrameLoad first
+        function onFrameLoad() {
+            setTimeout(() => {
+                loader.style.display = 'none';
+                iframe.style.opacity = '1';
+            }, 400);
+        }
+        
+        // Fix: Add event listener via JS to ensure function is defined
+        iframe.addEventListener('load', onFrameLoad);
 
         function setLanguage(lang) {
             currentLang = lang;
@@ -293,7 +304,6 @@
             iframe.style.opacity = '0';
             
             // Construct URL with Language Parameter
-            // This sends ?lang=en or ?lang=id to the inner file
             const urlWithLang = `${sim.path}?lang=${currentLang}`;
             iframe.src = urlWithLang;
             
@@ -312,15 +322,7 @@
             if(mobileSelect) mobileSelect.value = key;
         }
 
-        function onFrameLoad() {
-            setTimeout(() => {
-                loader.style.display = 'none';
-                iframe.style.opacity = '1';
-            }, 400);
-        }
-
         function reloadFrame() {
-            // Reloads the iframe keeping the current src (which includes the ?lang param)
             iframe.contentWindow.location.reload();
         }
 
@@ -336,7 +338,6 @@
         // Initialize
         window.addEventListener('DOMContentLoaded', () => {
             setLanguage('en'); // Start in English
-            // loadSim is called inside setLanguage
         });
 
     </script>
