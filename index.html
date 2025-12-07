@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cambridge IGCSE Sciences - Interactive Coursebook</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap');
+        body { font-family: 'Noto Sans', sans-serif; }
+        
+        /* Custom Scrollbar for Sidebar */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 3px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        .nav-item.active {
+            background-color: #eff6ff;
+            color: #2563eb;
+            border-right: 4px solid #2563eb;
+        }
+        
+        /* Animasi halus untuk iframe */
+        .iframe-container {
+            transition: opacity 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200 z-10 flex-none h-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 text-white p-2 rounded-lg shadow-md">
+                    <i class="fas fa-microscope"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-xl font-bold text-gray-900 leading-tight">IGCSE Combined & Co-ordinated Sciences</h1>
+                    <p class="text-xs text-gray-500">Biology Section</p>
+                </div>
+            </div>
+            <div class="hidden md:flex items-center gap-2 text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-full border border-gray-200">
+                <i class="fas fa-book-open text-blue-400"></i>
+                <span>Digital Coursebook</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <div class="flex flex-1 overflow-hidden max-w-7xl mx-auto w-full">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 bg-white border-r border-gray-200 flex-none flex flex-col hidden md:flex">
+            <div class="p-4 border-b border-gray-100">
+                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Daftar Isi (Syllabus)</h2>
+            </div>
+            
+            <nav class="flex-1 overflow-y-auto custom-scroll p-3 space-y-4">
+                
+                <!-- B1: Characteristics of Living Organisms -->
+                <div>
+                    <div class="px-3 py-2 text-xs font-bold text-gray-500 flex items-center gap-2">
+                        <span class="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-[10px]">B1</span>
+                        Living Organisms
+                    </div>
+                    
+                    <button onclick="loadSim('characteristics')" id="btn-characteristics" class="nav-item w-full text-left px-3 py-2.5 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 group">
+                        <span class="w-6 h-6 rounded bg-green-100 text-green-600 flex items-center justify-center group-hover:bg-green-200 transition-colors shadow-sm">
+                            <i class="fas fa-leaf text-xs"></i>
+                        </span>
+                        Ciri Makhluk Hidup
+                    </button>
+                </div>
+
+                <!-- B2: Cells & Movement -->
+                <div>
+                    <div class="px-3 py-2 text-xs font-bold text-gray-500 flex items-center gap-2">
+                        <span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px]">B2</span>
+                        Movement in & out of cells
+                    </div>
+                    
+                    <div class="space-y-1">
+                        <button onclick="loadSim('diffusion')" id="btn-diffusion" class="nav-item w-full text-left px-3 py-2.5 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 group">
+                            <span class="w-6 h-6 rounded bg-purple-100 text-purple-600 flex items-center justify-center group-hover:bg-purple-200 transition-colors shadow-sm">
+                                <i class="fas fa-wind text-xs"></i>
+                            </span>
+                            Difusi (Diffusion)
+                        </button>
+
+                        <button onclick="loadSim('osmosis')" id="btn-osmosis" class="nav-item w-full text-left px-3 py-2.5 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 group">
+                            <span class="w-6 h-6 rounded bg-blue-100 text-blue-600 flex items-center justify-center group-hover:bg-blue-200 transition-colors shadow-sm">
+                                <i class="fas fa-tint text-xs"></i>
+                            </span>
+                            Osmosis
+                        </button>
+
+                        <button onclick="loadSim('active-transport')" id="btn-active-transport" class="nav-item w-full text-left px-3 py-2.5 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 group">
+                            <span class="w-6 h-6 rounded bg-orange-100 text-orange-600 flex items-center justify-center group-hover:bg-orange-200 transition-colors shadow-sm">
+                                <i class="fas fa-bolt text-xs"></i>
+                            </span>
+                            Transpor Aktif
+                        </button>
+                    </div>
+                </div>
+
+            </nav>
+
+            <div class="p-4 border-t border-gray-200 bg-gray-50">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 shadow-sm">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">Mode Belajar</p>
+                        <p class="text-[10px] text-gray-500">Akses Penuh</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Iframe Container -->
+        <main class="flex-1 bg-gray-100 p-2 sm:p-4 md:p-6 flex flex-col h-full relative">
+            <!-- Mobile Menu Toggle (Visible only on small screens) -->
+            <div class="md:hidden mb-4 bg-white p-2 rounded-lg shadow-sm border border-gray-200">
+                <label class="text-xs text-gray-500 font-bold px-1 block mb-1">Pilih Topik:</label>
+                <select onchange="loadSim(this.value)" id="mobile-select" class="block w-full rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 bg-gray-50">
+                    <optgroup label="B1. Living Organisms">
+                        <option value="characteristics">Ciri Makhluk Hidup</option>
+                    </optgroup>
+                    <optgroup label="B2. Movement in Cells">
+                        <option value="diffusion" selected>Difusi (Diffusion)</option>
+                        <option value="osmosis">Osmosis</option>
+                        <option value="active-transport">Transpor Aktif</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <!-- The Iframe -->
+            <div class="flex-1 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden relative flex flex-col">
+                <!-- Toolbar kecil di atas iframe -->
+                <div class="h-10 bg-gray-50 border-b border-gray-200 flex justify-between items-center px-4 flex-none">
+                    <span id="topic-title" class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Memuat...</span>
+                    <div class="flex gap-2">
+                        <button onclick="reloadFrame()" class="text-gray-400 hover:text-blue-600 transition-colors" title="Reload">
+                            <i class="fas fa-redo-alt text-xs"></i>
+                        </button>
+                        <button onclick="toggleFullscreen()" class="text-gray-400 hover:text-blue-600 transition-colors" title="Fullscreen">
+                            <i class="fas fa-expand text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="relative flex-1 w-full h-full bg-white">
+                    <!-- Loading State -->
+                    <div id="loader" class="absolute inset-0 bg-white z-10 flex items-center justify-center text-gray-400">
+                        <div class="text-center">
+                            <div class="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                            <p class="text-sm font-medium text-gray-500">Memuat Simulasi...</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Main Frame -->
+                    <iframe 
+                        id="content-frame"
+                        src="" 
+                        class="w-full h-full opacity-0 iframe-container"
+                        frameborder="0"
+                        allowfullscreen
+                        onload="onFrameLoad()"
+                    ></iframe>
+                </div>
+            </div>
+            
+            <p class="text-center text-[10px] text-gray-400 mt-2">
+                Pastikan folder 'all-folder-main' berada di lokasi yang sama dengan file ini.
+            </p>
+        </main>
+    </div>
+
+    <script>
+        // --- KONFIGURASI FILE (Sesuai dengan file yang diupload) ---
+        const simulations = {
+            'diffusion': {
+                path: 'all-folder-main/diffusion.html',
+                title: 'Difusi (Diffusion)',
+                group: 'B2. Movement in Cells'
+            },
+            'osmosis': {
+                path: 'all-folder-main/osmosis.html',
+                title: 'Osmosis',
+                group: 'B2. Movement in Cells'
+            },
+            'active-transport': {
+                path: 'all-folder-main/active-transport.html',
+                title: 'Transpor Aktif (Active Transport)',
+                group: 'B2. Movement in Cells'
+            },
+            'characteristics': {
+                path: 'all-folder-main/characteristic-of-livingthings.html',
+                title: 'Ciri Makhluk Hidup (Living Things)',
+                group: 'B1. Living Organisms'
+            }
+        };
+
+        const iframe = document.getElementById('content-frame');
+        const loader = document.getElementById('loader');
+        const topicTitle = document.getElementById('topic-title');
+        const mobileSelect = document.getElementById('mobile-select');
+
+        // Fungsi Memuat Simulasi
+        function loadSim(key) {
+            const sim = simulations[key];
+            if(!sim) return;
+
+            // Tampilkan loader & sembunyikan iframe sementara
+            loader.style.display = 'flex';
+            iframe.style.opacity = '0';
+            
+            // Set source
+            iframe.src = sim.path;
+            
+            // Update UI Teks
+            topicTitle.innerHTML = `<span class="text-blue-600 mr-2">${sim.group}</span> / <span class="ml-2 text-gray-800">${sim.title}</span>`;
+            
+            // Update Menu Active State (Desktop)
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            const activeBtn = document.getElementById(`btn-${key}`);
+            if(activeBtn) activeBtn.classList.add('active');
+
+            // Update Select (Mobile)
+            if(mobileSelect) mobileSelect.value = key;
+        }
+
+        function onFrameLoad() {
+            // Hilangkan loader dan munculkan iframe
+            setTimeout(() => {
+                loader.style.display = 'none';
+                iframe.style.opacity = '1';
+            }, 500); // Delay kecil untuk memastikan rendering internal selesai
+        }
+
+        function reloadFrame() {
+            iframe.contentWindow.location.reload();
+        }
+
+        function toggleFullscreen() {
+            const container = document.querySelector('.bg-white.rounded-xl.shadow-lg'); // Target container iframe
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().catch(err => {
+                    alert(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // Error Handling jika file tidak ditemukan
+        iframe.onerror = function() {
+            loader.innerHTML = '<p class="text-red-500">File tidak ditemukan. Cek folder "all-folder-main".</p>';
+        };
+
+        // Muat default saat pertama kali dibuka
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSim('diffusion');
+        });
+    </script>
+</body>
+</html>
